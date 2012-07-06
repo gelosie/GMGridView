@@ -33,7 +33,6 @@
 @protocol GMGridViewDataSource;
 @protocol GMGridViewActionDelegate;
 @protocol GMGridViewSortingDelegate;
-@protocol GMGridViewTransformationDelegate;
 @protocol GMGridViewLayoutStrategy;
 
 typedef enum
@@ -67,7 +66,6 @@ typedef enum
 @property (nonatomic, gm_weak) IBOutlet NSObject<GMGridViewDataSource> *dataSource;                    // Required
 @property (nonatomic, gm_weak) IBOutlet NSObject<GMGridViewActionDelegate> *actionDelegate;            // Optional - to get taps callback & deleting item
 @property (nonatomic, gm_weak) IBOutlet NSObject<GMGridViewSortingDelegate> *sortingDelegate;          // Optional - to enable sorting
-@property (nonatomic, gm_weak) IBOutlet NSObject<GMGridViewTransformationDelegate> *transformDelegate; // Optional - to enable fullsize mode
 
 // Layout Strategy
 @property (nonatomic, strong) IBOutlet id<GMGridViewLayoutStrategy> layoutStrategy; // Default is GMGridViewLayoutVerticalStrategy
@@ -83,7 +81,6 @@ typedef enum
 @property (nonatomic) BOOL centerGrid;                                // Default is YES
 @property (nonatomic) UIEdgeInsets minEdgeInsets;                     // Default is (5, 5, 5, 5)
 @property (nonatomic) CFTimeInterval minimumPressDuration;            // Default is 0.2; if set to 0, the view wont be scrollable
-@property (nonatomic) BOOL showFullSizeViewWithAlphaWhenTransforming; // Default is YES - not working right now
 @property (nonatomic) BOOL enableEditOnLongPress;                     // Default is NO
 @property (nonatomic) BOOL disableEditOnEmptySpaceTap;                // Default is NO
 
@@ -174,21 +171,3 @@ typedef enum
 
 @end
 
-//////////////////////////////////////////////////////////////
-#pragma mark Protocol GMGridViewTransformationDelegate
-//////////////////////////////////////////////////////////////
-
-@protocol GMGridViewTransformationDelegate <NSObject>
-
-@required
-// Fullsize
-- (CGSize)GMGridView:(GMGridView *)gridView sizeInFullSizeForCell:(GMGridViewCell *)cell atIndex:(NSInteger)index inInterfaceOrientation:(UIInterfaceOrientation)orientation;
-- (UIView *)GMGridView:(GMGridView *)gridView fullSizeViewForCell:(GMGridViewCell *)cell atIndex:(NSInteger)index;
-
-// Transformation (pinch, drag, rotate) of the item
-@optional
-- (void)GMGridView:(GMGridView *)gridView didStartTransformingCell:(GMGridViewCell *)cell;
-- (void)GMGridView:(GMGridView *)gridView didEnterFullSizeForCell:(GMGridViewCell *)cell;
-- (void)GMGridView:(GMGridView *)gridView didEndTransformingCell:(GMGridViewCell *)cell;
-
-@end

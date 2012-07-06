@@ -48,10 +48,6 @@
 @synthesize contentView = _contentView;
 @synthesize editing = _editing;
 @synthesize inShakingMode = _inShakingMode;
-@synthesize fullSize = _fullSize;
-@synthesize fullSizeView = _fullSizeView;
-@synthesize inFullSizeMode = _inFullSizeMode;
-@synthesize defaultFullsizeViewResizingMask = _defaultFullsizeViewResizingMask;
 @synthesize deleteButton = _deleteButton;
 @synthesize deleteBlock = _deleteBlock;
 @synthesize deleteButtonIcon = _deleteButtonIcon;
@@ -72,7 +68,6 @@
 {
     if ((self = [super initWithFrame:frame])) 
     {
-        self.autoresizesSubviews = !YES;
         self.editing = NO;
         
         UIButton *deleteButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -91,20 +86,6 @@
 //////////////////////////////////////////////////////////////
 #pragma mark UIView
 //////////////////////////////////////////////////////////////
-
-- (void)layoutSubviews
-{
-    if(self.inFullSizeMode)
-    {
-        CGPoint origin = CGPointMake((self.bounds.size.width - self.fullSize.width) / 2, 
-                                     (self.bounds.size.height - self.fullSize.height) / 2);
-        self.fullSizeView.frame = CGRectMake(origin.x, origin.y, self.fullSize.width, self.fullSize.height);
-    }
-    else
-    {
-        self.fullSizeView.frame = self.bounds;
-    }
-}
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
@@ -147,36 +128,6 @@
     [self bringSubviewToFront:self.deleteButton];
 }
 
-- (void)setFullSizeView:(UIView *)fullSizeView
-{
-    if ([self isInFullSizeMode]) 
-    {
-        fullSizeView.frame = _fullSizeView.frame;
-        fullSizeView.alpha = _fullSizeView.alpha;
-    }
-    else
-    {
-        fullSizeView.frame = self.bounds;
-        fullSizeView.alpha = 0;
-    }
-    
-    self.defaultFullsizeViewResizingMask = fullSizeView.autoresizingMask | UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleBottomMargin;
-    
-    fullSizeView.autoresizingMask = _fullSizeView.autoresizingMask;
-    
-    [_fullSizeView removeFromSuperview];
-    _fullSizeView = fullSizeView;
-    [self addSubview:_fullSizeView];
-    
-    [self bringSubviewToFront:self.deleteButton];
-}
-
-- (void)setFullSize:(CGSize)fullSize
-{
-    _fullSize = fullSize;
-    
-    [self setNeedsLayout];
-}
 
 - (void)setEditing:(BOOL)editing
 {
@@ -280,8 +231,6 @@
 
 - (void)prepareForReuse
 {
-    self.fullSize = CGSizeZero;
-    self.fullSizeView = nil;
     self.editing = NO;
     self.deleteBlock = nil;
 }
@@ -292,66 +241,6 @@
     {
         [self.contentView shakeStatus:on];
         _inShakingMode = on;
-    }
-}
-
-- (void)switchToFullSizeMode:(BOOL)fullSizeEnabled
-{
-    if (fullSizeEnabled) 
-    {
-        self.fullSizeView.autoresizingMask = self.defaultFullsizeViewResizingMask;
-        
-        CGPoint center = self.fullSizeView.center;
-        self.fullSizeView.frame = CGRectMake(self.fullSizeView.frame.origin.x, self.fullSizeView.frame.origin.y, self.fullSize.width, self.fullSize.height);
-        self.fullSizeView.center = center;
-        
-        _inFullSizeMode = YES;
-        
-        self.fullSizeView.alpha = MAX(self.fullSizeView.alpha, self.contentView.alpha);
-        self.contentView.alpha  = 0;
-        
-        [UIView animateWithDuration:0.3 
-                         animations:^{
-                             self.fullSizeView.alpha = 1;
-                             self.fullSizeView.frame = CGRectMake(self.fullSizeView.frame.origin.x, self.fullSizeView.frame.origin.y, self.fullSize.width, self.fullSize.height);
-                             self.fullSizeView.center = center;
-                         } 
-                         completion:^(BOOL finished){
-                             [self setNeedsLayout];
-                         }
-		 ];
-    }
-    else
-    {
-        self.fullSizeView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        
-        _inFullSizeMode = NO;
-        self.fullSizeView.alpha = 0;
-        self.contentView.alpha  = 0.6;
-        
-        [UIView animateWithDuration:0.3 
-                         animations:^{
-                             self.contentView.alpha  = 1;
-                             self.fullSizeView.frame = self.bounds;
-                         } 
-                         completion:^(BOOL finished){
-                             [self setNeedsLayout];
-                         }
-         ];
-    }
-}
-
-- (void)stepToFullsizeWithAlpha:(CGFloat)alpha
-{
-    return; // not supported anymore - to be fixed
-    
-    if (![self isInFullSizeMode]) 
-    {
-        alpha = MAX(0, alpha);
-        alpha = MIN(1, alpha);
-        
-        self.fullSizeView.alpha = alpha;
-        self.contentView.alpha  = 1.4 - alpha;
     }
 }
 

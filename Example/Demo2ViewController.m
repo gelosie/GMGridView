@@ -13,7 +13,7 @@
 #import "OptionsViewController.h"
 #import "OptionsViewController.h"
 
-@interface Demo2ViewController () <GMGridViewDataSource, GMGridViewSortingDelegate, GMGridViewTransformationDelegate>
+@interface Demo2ViewController () <GMGridViewDataSource, GMGridViewSortingDelegate>
 {
     __gm_weak GMGridView *_gmGridView1;
     __gm_weak GMGridView *_gmGridView2;
@@ -108,11 +108,9 @@
     [super viewDidLoad];
     
     _gmGridView1.sortingDelegate   = self;
-    _gmGridView1.transformDelegate = self;
     _gmGridView1.dataSource = self;
     
     _gmGridView2.sortingDelegate   = self;
-    _gmGridView2.transformDelegate = self;
     _gmGridView2.dataSource = self;
     
     _gmGridView1.mainSuperView = self.view;

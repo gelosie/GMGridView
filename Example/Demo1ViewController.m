@@ -19,7 +19,7 @@
 #pragma mark ViewController (privates methods)
 //////////////////////////////////////////////////////////////
 
-@interface Demo1ViewController () <GMGridViewDataSource, GMGridViewSortingDelegate, GMGridViewTransformationDelegate, GMGridViewActionDelegate>
+@interface Demo1ViewController () <GMGridViewDataSource, GMGridViewSortingDelegate, GMGridViewActionDelegate>
 {
     __gm_weak GMGridView *_gmGridView;
     UINavigationController *_optionsNav;
@@ -125,7 +125,6 @@
     _gmGridView.centerGrid = YES;
     _gmGridView.actionDelegate = self;
     _gmGridView.sortingDelegate = self;
-    _gmGridView.transformDelegate = self;
     _gmGridView.dataSource = self;
     
     UIButton *infoButton = [UIButton buttonWithType:UIButtonTypeInfoDark];
