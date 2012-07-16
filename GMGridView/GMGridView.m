@@ -1590,13 +1590,5 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
 }
 
 
-//////////////////////////////////////////////////////////////
-#pragma mark depracated public methods
-//////////////////////////////////////////////////////////////
-
-- (UIScrollView *)scrollView
-{
-    return self;
-}
 
 @end
