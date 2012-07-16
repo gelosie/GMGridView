@@ -48,10 +48,7 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
     UILongPressGestureRecognizer *_longPressGesture;
     
     // Moving gestures
-    UIPinchGestureRecognizer     *_pinchGesture;
     UITapGestureRecognizer       *_tapGesture;
-    UIRotationGestureRecognizer  *_rotationGesture;
-    UIPanGestureRecognizer       *_panGesture;
     
     // General vars
     NSInteger _numberTotalItems;
@@ -65,13 +62,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
     
     CGPoint _minPossibleContentOffset;
     CGPoint _maxPossibleContentOffset;
-    
-    // Transforming control vars
-    GMGridViewCell *_transformingItem;
-    CGFloat _lastRotation;
-    CGFloat _lastScale;
-    BOOL _inFullSizeMode;
-    BOOL _inTransformingState;
     
     // Rotation
     BOOL _rotationActive;
@@ -88,9 +78,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
 - (void)sortingPanGestureUpdated:(UIPanGestureRecognizer *)panGesture;
 - (void)longPressGestureUpdated:(UILongPressGestureRecognizer *)longPressGesture;
 - (void)tapGestureUpdated:(UITapGestureRecognizer *)tapGesture;
-- (void)panGestureUpdated:(UIPanGestureRecognizer *)panGesture;
-- (void)pinchGestureUpdated:(UIPinchGestureRecognizer *)pinchGesture;
-- (void)rotationGestureUpdated:(UIRotationGestureRecognizer *)rotationGesture;
 
 // Sorting movement control
 - (void)sortingMoveDidStartAtPoint:(CGPoint)point;
@@ -184,22 +171,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
     _tapGesture.cancelsTouchesInView = NO;
     [self addGestureRecognizer:_tapGesture];
     
-    /////////////////////////////
-    // Transformation gestures :
-    _pinchGesture = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(pinchGestureUpdated:)];
-    _pinchGesture.delegate = self;
-    [self addGestureRecognizer:_pinchGesture];
-    
-    _rotationGesture = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(rotationGestureUpdated:)];
-    _rotationGesture.delegate = self;
-    [self addGestureRecognizer:_rotationGesture];
-    
-    _panGesture = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(panGestureUpdated:)];
-    _panGesture.delegate = self;
-    [_panGesture setMaximumNumberOfTouches:2];
-    [_panGesture setMinimumNumberOfTouches:2];
-    [self addGestureRecognizer:_panGesture];
-    
     //////////////////////
     // Sorting gestures :
     
@@ -246,9 +217,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
     _sortFuturePosition = GMGV_INVALID_POSITION;
     _itemSize = CGSizeZero;
     _centerGrid = YES;
-    
-    _lastScale = 1.0;
-    _lastRotation = 0.0;
     
     _minPossibleContentOffset = CGPointMake(0, 0);
     _maxPossibleContentOffset = CGPointMake(0, 0);
@@ -302,16 +270,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
         if (!CGSizeEqualToSize(_itemSize, itemSize)) 
         {
             _itemSize = itemSize;
-            
-            [[self itemSubviews] enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-                
-                if (obj != _transformingItem) 
-                {
-                    GMGridViewCell *cell = (GMGridViewCell *)obj;
-                    cell.bounds = CGRectMake(0, 0, _itemSize.width, _itemSize.height);
-                    cell.contentView.frame = cell.bounds;
-                }
-            }];
         }
         
         
@@ -478,16 +436,12 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
     }
     else if (gestureRecognizer == _longPressGesture)
     {
-        valid = (self.sortingDelegate || self.enableEditOnLongPress) && !isScrolling && !self.isEditing;
+        valid = (self.sortingDelegate) && !isScrolling;
+        //valid = (self.sortingDelegate || self.enableEditOnLongPress) && !isScrolling && !self.isEditing;
     }
     else if (gestureRecognizer == _sortingPanGesture) 
     {
         valid = (_sortMovingItem != nil && [_longPressGesture hasRecognizedValidGesture]);
-    }
-    else if(gestureRecognizer == _rotationGesture || gestureRecognizer == _pinchGesture || gestureRecognizer == _panGesture)
-    {
-
-        valid = NO;
     }
     
     return valid;
@@ -499,7 +453,46 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
 
 - (void)longPressGestureUpdated:(UILongPressGestureRecognizer *)longPressGesture
 {
-    if (self.enableEditOnLongPress && !self.editing) {
+    NSLog(@"-------------------------------- long press ...");
+    //if (self.enableEditOnLongPress && !self.editing) {
+    if ( self.editing) {
+        switch (longPressGesture.state) 
+        {
+            case UIGestureRecognizerStateBegan:
+            {
+                if (!_sortMovingItem) 
+                { 
+                    CGPoint location = [longPressGesture locationInView:self];
+                    
+                    NSInteger position = [self.layoutStrategy itemPositionFromLocation:location];
+                    
+                    if (position != GMGV_INVALID_POSITION) 
+                    {
+                        [self sortingMoveDidStartAtPoint:location];
+                    }
+                }
+                
+                break;
+            }
+            case UIGestureRecognizerStateEnded:
+            case UIGestureRecognizerStateCancelled:
+            case UIGestureRecognizerStateFailed:
+            {
+                [_sortingPanGesture end];
+                
+                if (_sortMovingItem) 
+                {                
+                    CGPoint location = [longPressGesture locationInView:self];
+                    [self sortingMoveDidStopAtPoint:location];
+                }
+                
+                break;
+            }
+            default:
+                break;
+        }
+    }else{
+        
         CGPoint locationTouch = [longPressGesture locationInView:self];
         NSInteger position = [self.layoutStrategy itemPositionFromLocation:locationTouch];
         
@@ -511,42 +504,7 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
         }
         return;
     }
-    
-    switch (longPressGesture.state) 
-    {
-        case UIGestureRecognizerStateBegan:
-        {
-            if (!_sortMovingItem) 
-            { 
-                CGPoint location = [longPressGesture locationInView:self];
-                
-                NSInteger position = [self.layoutStrategy itemPositionFromLocation:location];
-                
-                if (position != GMGV_INVALID_POSITION) 
-                {
-                    [self sortingMoveDidStartAtPoint:location];
-                }
-            }
-            
-            break;
-        }
-        case UIGestureRecognizerStateEnded:
-        case UIGestureRecognizerStateCancelled:
-        case UIGestureRecognizerStateFailed:
-        {
-            [_sortingPanGesture end];
-            
-            if (_sortMovingItem) 
-            {                
-                CGPoint location = [longPressGesture locationInView:self];
-                [self sortingMoveDidStopAtPoint:location];
-            }
-            
-            break;
-        }
-        default:
-            break;
-    }
+
 }
 
 - (void)sortingPanGestureUpdated:(UIPanGestureRecognizer *)panGesture
@@ -573,8 +531,13 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
             CGPoint offset = translation;
             CGPoint locationInScroll = [panGesture locationInView:self];
             
+            
+            NSLog(@"----------- sort pan  (%f,%f)",locationInScroll.x,locationInScroll.y);
+            
             _sortMovingItem.transform = CGAffineTransformMakeTranslation(offset.x, offset.y);
             [self sortingMoveDidContinueToPoint:locationInScroll];
+            
+            _sortMovingItem.center = CGPointMake( locationInScroll.x - self.contentOffset.x,locationInScroll.y-self.contentOffset.y);
             
             break;
         }
@@ -814,7 +777,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
                 }
             }
         }
-        
         _sortFuturePosition = position;
     }
 }
@@ -850,9 +812,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
             {
                 [panGesture end];
             }
-            
-            CGPoint translate = [panGesture translationInView:self];
-            [_transformingItem.contentView setCenter:CGPointMake(_transformingItem.contentView.center.x + translate.x, _transformingItem.contentView.center.y + translate.y)];
             [panGesture setTranslation:CGPointZero inView:self];
             
             break;
@@ -862,100 +821,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
         }
     }
 }
-
-- (void)pinchGestureUpdated:(UIPinchGestureRecognizer *)pinchGesture
-{
-    switch (pinchGesture.state) 
-    {
-        case UIGestureRecognizerStateEnded:
-        case UIGestureRecognizerStateCancelled:
-        case UIGestureRecognizerStateFailed:
-        {
-            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(transformingGestureDidFinish) object:nil];
-            [self performSelector:@selector(transformingGestureDidFinish) withObject:nil afterDelay:0.1];
-            
-            break;
-        }
-        case UIGestureRecognizerStateBegan:
-        {
-        }
-        case UIGestureRecognizerStateChanged:
-        {
-            CGFloat currentScale = [[_transformingItem.contentView.layer valueForKeyPath:@"transform.scale"] floatValue];
-            
-            CGFloat scale = 1 - (_lastScale - [_pinchGesture scale]);
-            
-            //todo: compute these scale factors dynamically based on ratio of thumbnail/fullscreen sizes
-            const CGFloat kMaxScale = 3;
-            const CGFloat kMinScale = 0.5;
-            
-            scale = MIN(scale, kMaxScale / currentScale);
-            scale = MAX(scale, kMinScale / currentScale);
-            
-            if (scale >= kMinScale && scale <= kMaxScale) 
-            {
-                CGAffineTransform currentTransform = [_transformingItem.contentView transform];
-                CGAffineTransform newTransform = CGAffineTransformScale(currentTransform, scale, scale);
-                _transformingItem.contentView.transform = newTransform;
-                
-                _lastScale = [_pinchGesture scale];
-                
-                currentScale += scale;
-                
-                CGFloat alpha = 1 - (kMaxScale - currentScale);
-                alpha = MAX(0, alpha);
-                alpha = MIN(1, alpha);
-
-                
-                _transformingItem.backgroundColor = [[UIColor darkGrayColor] colorWithAlphaComponent:MIN(alpha, 0.9)];
-            }
-            
-            break;
-        }
-        default:
-        {
-        }
-    }
-}
-
-- (void)rotationGestureUpdated:(UIRotationGestureRecognizer *)rotationGesture
-{
-    switch (rotationGesture.state) 
-    {
-        case UIGestureRecognizerStateEnded:
-        case UIGestureRecognizerStateCancelled:
-        case UIGestureRecognizerStateFailed:
-        {
-            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(transformingGestureDidFinish) object:nil];
-            [self performSelector:@selector(transformingGestureDidFinish) withObject:nil afterDelay:0.1];
-            
-            break;
-        }
-        case UIGestureRecognizerStateBegan:
-        {
-            break;
-        }
-        case UIGestureRecognizerStateChanged:
-        {
-            CGFloat rotation = [rotationGesture rotation] - _lastRotation;
-            CGAffineTransform currentTransform = [_transformingItem.contentView transform];
-            CGAffineTransform newTransform = CGAffineTransformRotate(currentTransform, rotation);
-            _transformingItem.contentView.transform = newTransform;
-            _lastRotation = [rotationGesture rotation];
-            
-            break;
-        }
-        default:
-        {
-        }
-    }
-}
-
-- (BOOL)isInTransformingState
-{
-    return _transformingItem != nil;
-}
-
 
 //////////////////////////////////////////////////////////////
 #pragma mark Tap gesture
@@ -1124,7 +989,7 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
     void (^layoutBlock)(void) = ^{
         for (UIView *view in [self itemSubviews])
         {        
-            if (view != _sortMovingItem && view != _transformingItem) 
+            if (view != _sortMovingItem) 
             {
                 NSInteger index = view.tag - kTagOffset;
                 CGPoint origin = [self.layoutStrategy originForItemAtPosition:index];

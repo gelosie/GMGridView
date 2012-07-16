@@ -304,6 +304,7 @@
 				GCC_PREFIX_HEADER = "GMGridView-Prefix.pch";
 				INFOPLIST_FILE = "GMGridView-Info.plist";
 				PRODUCT_NAME = GMGridView;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -315,6 +316,7 @@
 				GCC_PREFIX_HEADER = "GMGridView-Prefix.pch";
 				INFOPLIST_FILE = "GMGridView-Info.plist";
 				PRODUCT_NAME = GMGridView;
+				TARGETED_DEVICE_FAMILY = "1,2";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

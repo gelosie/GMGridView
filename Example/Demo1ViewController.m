@@ -125,6 +125,8 @@
     _gmGridView.centerGrid = YES;
     _gmGridView.actionDelegate = self;
     _gmGridView.sortingDelegate = self;
+    _gmGridView.enableEditOnLongPress = YES;
+    _gmGridView.disableEditOnEmptySpaceTap = YES;
     _gmGridView.dataSource = self;
     
     UIButton *infoButton = [UIButton buttonWithType:UIButtonTypeInfoDark];
