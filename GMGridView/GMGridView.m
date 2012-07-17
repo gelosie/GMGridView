@@ -453,8 +453,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
 
 - (void)longPressGestureUpdated:(UILongPressGestureRecognizer *)longPressGesture
 {
-    NSLog(@"-------------------------------- long press ...");
-    //if (self.enableEditOnLongPress && !self.editing) {
     if ( self.editing) {
         switch (longPressGesture.state) 
         {
@@ -530,9 +528,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
             CGPoint translation = [panGesture translationInView:self];
             CGPoint offset = translation;
             CGPoint locationInScroll = [panGesture locationInView:self];
-            
-            
-            NSLog(@"----------- sort pan  (%f,%f)",locationInScroll.x,locationInScroll.y);
             
             _sortMovingItem.transform = CGAffineTransformMakeTranslation(offset.x, offset.y);
             [self sortingMoveDidContinueToPoint:locationInScroll];
@@ -677,26 +672,19 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
     
     CGPoint newOrigin = [self.layoutStrategy originForItemAtPosition:_sortFuturePosition];
     CGRect newFrame = CGRectMake(newOrigin.x, newOrigin.y, _itemSize.width, _itemSize.height);
+
+    _sortMovingItem.transform = CGAffineTransformIdentity;
+    _sortMovingItem.frame = newFrame;
     
-    [UIView animateWithDuration:kDefaultAnimationDuration 
-                          delay:0
-                        options:0
-                     animations:^{
-                         _sortMovingItem.transform = CGAffineTransformIdentity;
-                         _sortMovingItem.frame = newFrame;
-                     }
-                     completion:^(BOOL finished){
-                         if ([self.sortingDelegate respondsToSelector:@selector(GMGridView:didEndMovingCell:)])
-                         {
-                             [self.sortingDelegate GMGridView:self didEndMovingCell:_sortMovingItem];
-                         }
-                         
-                         _sortMovingItem = nil;
-                         _sortFuturePosition = GMGV_INVALID_POSITION;
-                         
-                         [self setSubviewsCacheAsInvalid];
-                     }
-     ];
+    if ([self.sortingDelegate respondsToSelector:@selector(GMGridView:didEndMovingCell:)])
+    {
+        [self.sortingDelegate GMGridView:self didEndMovingCell:_sortMovingItem];
+    }
+    
+    _sortMovingItem = nil;
+    _sortFuturePosition = GMGV_INVALID_POSITION;
+    
+    [self setSubviewsCacheAsInvalid];
 }
 
 - (void)sortingMoveDidContinueToPoint:(CGPoint)point
@@ -778,47 +766,6 @@ static const UIViewAnimationOptions kDefaultAnimationOptions = UIViewAnimationOp
             }
         }
         _sortFuturePosition = position;
-    }
-}
-
-//////////////////////////////////////////////////////////////
-#pragma mark Transformation gestures & logic
-//////////////////////////////////////////////////////////////
-
-- (void)panGestureUpdated:(UIPanGestureRecognizer *)panGesture
-{
-    switch (panGesture.state) 
-    {
-        case UIGestureRecognizerStateEnded:
-        case UIGestureRecognizerStateCancelled:
-        case UIGestureRecognizerStateFailed:
-        {
-            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(transformingGestureDidFinish) object:nil];
-            [self performSelector:@selector(transformingGestureDidFinish) withObject:nil afterDelay:0.1];
-            
-            self.scrollEnabled = YES;
-            
-            break;
-        }
-        case UIGestureRecognizerStateBegan:
-        {
-            self.scrollEnabled = NO;
-            
-            break;
-        }
-        case UIGestureRecognizerStateChanged:
-        {
-            if (panGesture.numberOfTouches != 2) 
-            {
-                [panGesture end];
-            }
-            [panGesture setTranslation:CGPointZero inView:self];
-            
-            break;
-        }
-        default:
-        {
-        }
     }
 }
 

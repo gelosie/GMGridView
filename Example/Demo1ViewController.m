@@ -274,7 +274,7 @@
 
 - (BOOL)GMGridView:(GMGridView *)gridView canDeleteItemAtIndex:(NSInteger)index
 {
-    return YES; //index % 2 == 0;
+    return index % 2 == 0;
 }
 
 //////////////////////////////////////////////////////////////
